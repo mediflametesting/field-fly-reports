@@ -9,6 +9,11 @@ import {
   CalendarCheck,
   BarChart3,
   LogOut,
+  Users2,
+  Building2,
+  ClipboardList,
+  FileBarChart2,
+  Bell,
 } from "lucide-react";
 import {
   Sidebar,
@@ -35,9 +40,14 @@ interface NavItem {
 
 const items: NavItem[] = [
   { title: "Dashboard", url: "/app/dashboard", icon: LayoutDashboard, roles: ["admin", "manager", "hr", "executive"] },
+  { title: "Visit Report", url: "/app/visit-report", icon: ClipboardList, roles: ["executive", "manager", "admin"] },
   { title: "Daily Report", url: "/app/reports", icon: FileText, roles: ["executive", "manager", "admin"] },
   { title: "Visits", url: "/app/visits", icon: MapPin, roles: ["executive", "manager", "admin"] },
   { title: "Orders", url: "/app/orders", icon: ShoppingCart, roles: ["executive", "manager", "admin"] },
+  { title: "Customers", url: "/app/customers", icon: Users2, roles: ["admin", "manager", "executive"] },
+  { title: "Companies", url: "/app/companies", icon: Building2, roles: ["admin", "manager", "executive"] },
+  { title: "Reports", url: "/app/advanced-reports", icon: FileBarChart2, roles: ["admin", "manager", "hr", "executive"] },
+  { title: "Notifications", url: "/app/notifications", icon: Bell, roles: ["admin", "manager", "hr", "executive"] },
   { title: "Attendance", url: "/app/attendance", icon: CalendarCheck, roles: ["executive", "hr", "admin", "manager"] },
   { title: "Team", url: "/app/team", icon: Users, roles: ["manager", "admin"] },
   { title: "Analytics", url: "/app/analytics", icon: BarChart3, roles: ["manager", "admin"] },
