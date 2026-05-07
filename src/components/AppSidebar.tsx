@@ -9,6 +9,11 @@ import {
   CalendarCheck,
   BarChart3,
   LogOut,
+  Users2,
+  Building2,
+  ClipboardList,
+  FileBarChart2,
+  Bell,
 } from "lucide-react";
 import {
   Sidebar,
