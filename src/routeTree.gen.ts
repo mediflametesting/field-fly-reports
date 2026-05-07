@@ -13,13 +13,18 @@ import { Route as LoginRouteImport } from './routes/login'
 import { Route as AppRouteImport } from './routes/app'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AppVisitsRouteImport } from './routes/app.visits'
+import { Route as AppVisitReportRouteImport } from './routes/app.visit-report'
 import { Route as AppUsersRouteImport } from './routes/app.users'
 import { Route as AppTeamRouteImport } from './routes/app.team'
 import { Route as AppReportsRouteImport } from './routes/app.reports'
 import { Route as AppOrdersRouteImport } from './routes/app.orders'
+import { Route as AppNotificationsRouteImport } from './routes/app.notifications'
 import { Route as AppDashboardRouteImport } from './routes/app.dashboard'
+import { Route as AppCustomersRouteImport } from './routes/app.customers'
+import { Route as AppCompaniesRouteImport } from './routes/app.companies'
 import { Route as AppAttendanceRouteImport } from './routes/app.attendance'
 import { Route as AppAnalyticsRouteImport } from './routes/app.analytics'
+import { Route as AppAdvancedReportsRouteImport } from './routes/app.advanced-reports'
 
 const LoginRoute = LoginRouteImport.update({
   id: '/login',
@@ -39,6 +44,11 @@ const IndexRoute = IndexRouteImport.update({
 const AppVisitsRoute = AppVisitsRouteImport.update({
   id: '/visits',
   path: '/visits',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppVisitReportRoute = AppVisitReportRouteImport.update({
+  id: '/visit-report',
+  path: '/visit-report',
   getParentRoute: () => AppRoute,
 } as any)
 const AppUsersRoute = AppUsersRouteImport.update({
@@ -61,9 +71,24 @@ const AppOrdersRoute = AppOrdersRouteImport.update({
   path: '/orders',
   getParentRoute: () => AppRoute,
 } as any)
+const AppNotificationsRoute = AppNotificationsRouteImport.update({
+  id: '/notifications',
+  path: '/notifications',
+  getParentRoute: () => AppRoute,
+} as any)
 const AppDashboardRoute = AppDashboardRouteImport.update({
   id: '/dashboard',
   path: '/dashboard',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppCustomersRoute = AppCustomersRouteImport.update({
+  id: '/customers',
+  path: '/customers',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppCompaniesRoute = AppCompaniesRouteImport.update({
+  id: '/companies',
+  path: '/companies',
   getParentRoute: () => AppRoute,
 } as any)
 const AppAttendanceRoute = AppAttendanceRouteImport.update({
@@ -76,31 +101,46 @@ const AppAnalyticsRoute = AppAnalyticsRouteImport.update({
   path: '/analytics',
   getParentRoute: () => AppRoute,
 } as any)
+const AppAdvancedReportsRoute = AppAdvancedReportsRouteImport.update({
+  id: '/advanced-reports',
+  path: '/advanced-reports',
+  getParentRoute: () => AppRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/app': typeof AppRouteWithChildren
   '/login': typeof LoginRoute
+  '/app/advanced-reports': typeof AppAdvancedReportsRoute
   '/app/analytics': typeof AppAnalyticsRoute
   '/app/attendance': typeof AppAttendanceRoute
+  '/app/companies': typeof AppCompaniesRoute
+  '/app/customers': typeof AppCustomersRoute
   '/app/dashboard': typeof AppDashboardRoute
+  '/app/notifications': typeof AppNotificationsRoute
   '/app/orders': typeof AppOrdersRoute
   '/app/reports': typeof AppReportsRoute
   '/app/team': typeof AppTeamRoute
   '/app/users': typeof AppUsersRoute
+  '/app/visit-report': typeof AppVisitReportRoute
   '/app/visits': typeof AppVisitsRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/app': typeof AppRouteWithChildren
   '/login': typeof LoginRoute
+  '/app/advanced-reports': typeof AppAdvancedReportsRoute
   '/app/analytics': typeof AppAnalyticsRoute
   '/app/attendance': typeof AppAttendanceRoute
+  '/app/companies': typeof AppCompaniesRoute
+  '/app/customers': typeof AppCustomersRoute
   '/app/dashboard': typeof AppDashboardRoute
+  '/app/notifications': typeof AppNotificationsRoute
   '/app/orders': typeof AppOrdersRoute
   '/app/reports': typeof AppReportsRoute
   '/app/team': typeof AppTeamRoute
   '/app/users': typeof AppUsersRoute
+  '/app/visit-report': typeof AppVisitReportRoute
   '/app/visits': typeof AppVisitsRoute
 }
 export interface FileRoutesById {
@@ -108,13 +148,18 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/app': typeof AppRouteWithChildren
   '/login': typeof LoginRoute
+  '/app/advanced-reports': typeof AppAdvancedReportsRoute
   '/app/analytics': typeof AppAnalyticsRoute
   '/app/attendance': typeof AppAttendanceRoute
+  '/app/companies': typeof AppCompaniesRoute
+  '/app/customers': typeof AppCustomersRoute
   '/app/dashboard': typeof AppDashboardRoute
+  '/app/notifications': typeof AppNotificationsRoute
   '/app/orders': typeof AppOrdersRoute
   '/app/reports': typeof AppReportsRoute
   '/app/team': typeof AppTeamRoute
   '/app/users': typeof AppUsersRoute
+  '/app/visit-report': typeof AppVisitReportRoute
   '/app/visits': typeof AppVisitsRoute
 }
 export interface FileRouteTypes {
@@ -123,39 +168,54 @@ export interface FileRouteTypes {
     | '/'
     | '/app'
     | '/login'
+    | '/app/advanced-reports'
     | '/app/analytics'
     | '/app/attendance'
+    | '/app/companies'
+    | '/app/customers'
     | '/app/dashboard'
+    | '/app/notifications'
     | '/app/orders'
     | '/app/reports'
     | '/app/team'
     | '/app/users'
+    | '/app/visit-report'
     | '/app/visits'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
     | '/app'
     | '/login'
+    | '/app/advanced-reports'
     | '/app/analytics'
     | '/app/attendance'
+    | '/app/companies'
+    | '/app/customers'
     | '/app/dashboard'
+    | '/app/notifications'
     | '/app/orders'
     | '/app/reports'
     | '/app/team'
     | '/app/users'
+    | '/app/visit-report'
     | '/app/visits'
   id:
     | '__root__'
     | '/'
     | '/app'
     | '/login'
+    | '/app/advanced-reports'
     | '/app/analytics'
     | '/app/attendance'
+    | '/app/companies'
+    | '/app/customers'
     | '/app/dashboard'
+    | '/app/notifications'
     | '/app/orders'
     | '/app/reports'
     | '/app/team'
     | '/app/users'
+    | '/app/visit-report'
     | '/app/visits'
   fileRoutesById: FileRoutesById
 }
@@ -195,6 +255,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppVisitsRouteImport
       parentRoute: typeof AppRoute
     }
+    '/app/visit-report': {
+      id: '/app/visit-report'
+      path: '/visit-report'
+      fullPath: '/app/visit-report'
+      preLoaderRoute: typeof AppVisitReportRouteImport
+      parentRoute: typeof AppRoute
+    }
     '/app/users': {
       id: '/app/users'
       path: '/users'
@@ -223,11 +290,32 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppOrdersRouteImport
       parentRoute: typeof AppRoute
     }
+    '/app/notifications': {
+      id: '/app/notifications'
+      path: '/notifications'
+      fullPath: '/app/notifications'
+      preLoaderRoute: typeof AppNotificationsRouteImport
+      parentRoute: typeof AppRoute
+    }
     '/app/dashboard': {
       id: '/app/dashboard'
       path: '/dashboard'
       fullPath: '/app/dashboard'
       preLoaderRoute: typeof AppDashboardRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/app/customers': {
+      id: '/app/customers'
+      path: '/customers'
+      fullPath: '/app/customers'
+      preLoaderRoute: typeof AppCustomersRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/app/companies': {
+      id: '/app/companies'
+      path: '/companies'
+      fullPath: '/app/companies'
+      preLoaderRoute: typeof AppCompaniesRouteImport
       parentRoute: typeof AppRoute
     }
     '/app/attendance': {
@@ -244,28 +332,45 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppAnalyticsRouteImport
       parentRoute: typeof AppRoute
     }
+    '/app/advanced-reports': {
+      id: '/app/advanced-reports'
+      path: '/advanced-reports'
+      fullPath: '/app/advanced-reports'
+      preLoaderRoute: typeof AppAdvancedReportsRouteImport
+      parentRoute: typeof AppRoute
+    }
   }
 }
 
 interface AppRouteChildren {
+  AppAdvancedReportsRoute: typeof AppAdvancedReportsRoute
   AppAnalyticsRoute: typeof AppAnalyticsRoute
   AppAttendanceRoute: typeof AppAttendanceRoute
+  AppCompaniesRoute: typeof AppCompaniesRoute
+  AppCustomersRoute: typeof AppCustomersRoute
   AppDashboardRoute: typeof AppDashboardRoute
+  AppNotificationsRoute: typeof AppNotificationsRoute
   AppOrdersRoute: typeof AppOrdersRoute
   AppReportsRoute: typeof AppReportsRoute
   AppTeamRoute: typeof AppTeamRoute
   AppUsersRoute: typeof AppUsersRoute
+  AppVisitReportRoute: typeof AppVisitReportRoute
   AppVisitsRoute: typeof AppVisitsRoute
 }
 
 const AppRouteChildren: AppRouteChildren = {
+  AppAdvancedReportsRoute: AppAdvancedReportsRoute,
   AppAnalyticsRoute: AppAnalyticsRoute,
   AppAttendanceRoute: AppAttendanceRoute,
+  AppCompaniesRoute: AppCompaniesRoute,
+  AppCustomersRoute: AppCustomersRoute,
   AppDashboardRoute: AppDashboardRoute,
+  AppNotificationsRoute: AppNotificationsRoute,
   AppOrdersRoute: AppOrdersRoute,
   AppReportsRoute: AppReportsRoute,
   AppTeamRoute: AppTeamRoute,
   AppUsersRoute: AppUsersRoute,
+  AppVisitReportRoute: AppVisitReportRoute,
   AppVisitsRoute: AppVisitsRoute,
 }
 
@@ -279,3 +384,13 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { startInstance } from './start.ts'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+    config: Awaited<ReturnType<typeof startInstance.getOptions>>
+  }
+}
