@@ -1,8 +1,8 @@
 import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
-import { db, type Role, type User } from "./mock-data";
+import { authService, type Role, type SessionUser } from "@/services/authService";
 
 interface AuthState {
-  user: Omit<User, "password"> | null;
+  user: SessionUser | null;
   isAuthenticated: boolean;
   login: (username: string, password: string) => Promise<void>;
   logout: () => void;
@@ -10,10 +10,10 @@ interface AuthState {
 }
 
 const AuthContext = createContext<AuthState | null>(null);
-const STORAGE_KEY = "sfa_session_v1";
+const STORAGE_KEY = "sfa_session_v2";
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [user, setUser] = useState<AuthState["user"]>(null);
+  const [user, setUser] = useState<SessionUser | null>(null);
   const [ready, setReady] = useState(false);
 
   useEffect(() => {
@@ -27,13 +27,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const login = async (username: string, password: string) => {
-    const found = db.users.find(
-      (u) => u.username === username && u.password === password && u.active,
-    );
-    if (!found) throw new Error("Invalid username or password");
-    const { password: _pw, ...safe } = found;
-    setUser(safe);
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(safe));
+    const session = await authService.login(username, password);
+    setUser(session);
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(session));
   };
 
   const logout = () => {
@@ -57,3 +53,5 @@ export function useAuth() {
   if (!ctx) throw new Error("useAuth must be used within AuthProvider");
   return ctx;
 }
+
+export type { Role, SessionUser };
