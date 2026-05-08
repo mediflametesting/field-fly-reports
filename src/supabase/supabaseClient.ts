@@ -17,13 +17,9 @@ if (!isSupabaseConfigured && typeof window !== "undefined") {
   );
 }
 
-export const supabase: SupabaseClient = createClient(
-  url ?? "https://placeholder.supabase.co",
-  anonKey ?? "placeholder-anon-key",
-  {
-    auth: {
-      persistSession: false, // we use a custom username/password flow
-      autoRefreshToken: false,
-    },
+export const supabase: SupabaseClient = createClient(url, anonKey, {
+  auth: {
+    persistSession: false, // we use a custom username/password flow
+    autoRefreshToken: false,
   },
-);
+});
