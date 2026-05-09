@@ -28,7 +28,7 @@ import {
   SidebarMenuItem,
 } from "@/components/ui/sidebar";
 import { useAuth } from "@/lib/auth";
-import type { Role } from "@/lib/mock-data";
+import type { Role } from "@/services/authService";
 import { Button } from "@/components/ui/button";
 
 interface NavItem {
