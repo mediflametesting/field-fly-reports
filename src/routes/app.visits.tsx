@@ -1,7 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useAuth } from "@/lib/auth";
-import { db, userById } from "@/lib/mock-data";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -12,33 +11,55 @@ import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogT
 import { Badge } from "@/components/ui/badge";
 import { MapPin, Plus } from "lucide-react";
 import { toast } from "sonner";
+import { visitLogService, type VisitLog } from "@/services/visitLogService";
+import { userService, type AppUser } from "@/services/userService";
 
 export const Route = createFileRoute("/app/visits")({ component: VisitsPage });
 
 function VisitsPage() {
   const { user } = useAuth();
-  const [, force] = useState(0);
+  const isExec = user?.role === "executive";
+  const [list, setList] = useState<VisitLog[]>([]);
+  const [users, setUsers] = useState<AppUser[]>([]);
   const [open, setOpen] = useState(false);
+  const [saving, setSaving] = useState(false);
   const [form, setForm] = useState({ outletName: "", status: "productive" as "productive" | "non-productive", remarks: "" });
 
-  if (!user) return null;
-  const isExec = user.role === "executive";
-  const list = isExec ? db.visits.filter((v) => v.executiveId === user.id) : db.visits;
+  const reload = async () => {
+    if (!user) return;
+    const [v, u] = await Promise.all([
+      visitLogService.list(isExec ? user.id : undefined),
+      userService.list().catch(() => []),
+    ]);
+    setList(v);
+    setUsers(u);
+  };
 
-  const submit = () => {
+  useEffect(() => { reload(); /* eslint-disable-next-line */ }, [user?.id]);
+
+  if (!user) return null;
+  const userMap = new Map(users.map((u) => [u.id, u]));
+
+  const submit = async () => {
     if (!form.outletName.trim()) { toast.error("Outlet name required"); return; }
-    db.visits.unshift({
-      id: `v${Date.now()}`,
-      executiveId: user.id,
-      outletName: form.outletName,
-      date: new Date().toISOString().slice(0, 10),
-      status: form.status,
-      remarks: form.remarks,
-    });
-    toast.success("Visit logged");
-    setOpen(false);
-    setForm({ outletName: "", status: "productive", remarks: "" });
-    force((n) => n + 1);
+    setSaving(true);
+    try {
+      await visitLogService.create({
+        user_id: user.id,
+        outlet_name: form.outletName,
+        visit_date: new Date().toISOString().slice(0, 10),
+        status: form.status,
+        remarks: form.remarks || null,
+      });
+      toast.success("Visit logged");
+      setOpen(false);
+      setForm({ outletName: "", status: "productive", remarks: "" });
+      await reload();
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Save failed");
+    } finally {
+      setSaving(false);
+    }
   };
 
   return (
@@ -67,7 +88,7 @@ function VisitsPage() {
                 </div>
                 <div className="space-y-1.5"><Label>Remarks</Label><Textarea rows={3} value={form.remarks} onChange={(e) => setForm({ ...form, remarks: e.target.value })} /></div>
               </div>
-              <DialogFooter><Button onClick={submit}>Save</Button></DialogFooter>
+              <DialogFooter><Button onClick={submit} disabled={saving}>{saving ? "Saving…" : "Save"}</Button></DialogFooter>
             </DialogContent>
           </Dialog>
         )}
@@ -75,17 +96,17 @@ function VisitsPage() {
 
       <div className="grid gap-3">
         {list.map((v) => {
-          const u = userById(v.executiveId);
+          const u = userMap.get(v.user_id);
           return (
             <Card key={v.id}>
               <CardContent className="p-4 flex items-start gap-3">
                 <div className="rounded-md bg-primary/10 p-2 text-primary"><MapPin className="h-4 w-4" /></div>
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center justify-between gap-2">
-                    <div className="font-medium truncate">{v.outletName}</div>
+                    <div className="font-medium truncate">{v.outlet_name}</div>
                     <Badge variant={v.status === "productive" ? "default" : "secondary"}>{v.status}</Badge>
                   </div>
-                  <div className="text-xs text-muted-foreground mt-0.5">{u?.fullName} · {v.date}</div>
+                  <div className="text-xs text-muted-foreground mt-0.5">{u?.full_name ?? "—"} · {v.visit_date}</div>
                   {v.remarks && <p className="text-sm mt-2">{v.remarks}</p>}
                 </div>
               </CardContent>

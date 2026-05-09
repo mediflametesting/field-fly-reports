@@ -1,6 +1,5 @@
-import { createFileRoute } from "@tanstack/react-router";
-import { useState } from "react";
-import { db, type Role } from "@/lib/mock-data";
+import { createFileRoute, Navigate } from "@tanstack/react-router";
+import { useEffect, useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -11,40 +10,57 @@ import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogT
 import { Plus } from "lucide-react";
 import { toast } from "sonner";
 import { useAuth } from "@/lib/auth";
-import { Navigate } from "@tanstack/react-router";
+import { authService, type Role } from "@/services/authService";
+import { userService, type AppUser } from "@/services/userService";
 
 export const Route = createFileRoute("/app/users")({ component: UsersPage });
 
 function UsersPage() {
   const { hasRole } = useAuth();
-  const [, force] = useState(0);
+  const [list, setList] = useState<AppUser[]>([]);
   const [open, setOpen] = useState(false);
+  const [saving, setSaving] = useState(false);
   const [form, setForm] = useState({ fullName: "", username: "", password: "", role: "executive" as Role, region: "" });
+
+  const reload = async () => {
+    try { setList(await userService.list()); } catch (e) { toast.error(e instanceof Error ? e.message : "Load failed"); }
+  };
+
+  useEffect(() => { reload(); }, []);
 
   if (!hasRole("admin", "hr")) return <Navigate to="/app/dashboard" />;
 
-  const submit = () => {
+  const submit = async () => {
     if (!form.fullName || !form.username || !form.password) { toast.error("Fill all required fields"); return; }
-    if (db.users.some((u) => u.username === form.username)) { toast.error("Username already exists"); return; }
-    db.users.push({
-      id: `u${Date.now()}`,
-      username: form.username,
-      password: form.password,
-      fullName: form.fullName,
-      role: form.role,
-      region: form.region || undefined,
-      joinedAt: new Date().toISOString().slice(0, 10),
-      active: true,
-    });
-    toast.success("User created");
-    setOpen(false);
-    setForm({ fullName: "", username: "", password: "", role: "executive", region: "" });
-    force((n) => n + 1);
+    setSaving(true);
+    try {
+      await authService.createUser({
+        username: form.username,
+        password: form.password,
+        fullName: form.fullName,
+        role: form.role,
+        region: form.region || null,
+      });
+      toast.success("User created");
+      setOpen(false);
+      setForm({ fullName: "", username: "", password: "", role: "executive", region: "" });
+      await reload();
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Create failed");
+    } finally {
+      setSaving(false);
+    }
   };
 
-  const toggle = (id: string) => {
-    const u = db.users.find((x) => x.id === id);
-    if (u) { u.active = !u.active; toast.success(u.active ? "Activated" : "Deactivated"); force((n) => n + 1); }
+  const toggle = async (u: AppUser) => {
+    const next = u.status === "active" ? "inactive" : "active";
+    try {
+      await userService.setStatus(u.id, next);
+      toast.success(next === "active" ? "Activated" : "Deactivated");
+      await reload();
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Update failed");
+    }
   };
 
   return (
@@ -80,27 +96,28 @@ function UsersPage() {
                 <div className="space-y-1.5"><Label>Region</Label><Input value={form.region} onChange={(e) => setForm({ ...form, region: e.target.value })} /></div>
               </div>
             </div>
-            <DialogFooter><Button onClick={submit}>Create</Button></DialogFooter>
+            <DialogFooter><Button onClick={submit} disabled={saving}>{saving ? "Creating…" : "Create"}</Button></DialogFooter>
           </DialogContent>
         </Dialog>
       </div>
 
       <div className="grid gap-3">
-        {db.users.map((u) => (
+        {list.map((u) => (
           <Card key={u.id}>
             <CardContent className="p-4 flex items-center justify-between gap-3">
               <div className="min-w-0">
                 <div className="flex items-center gap-2">
-                  <span className="font-medium truncate">{u.fullName}</span>
+                  <span className="font-medium truncate">{u.full_name}</span>
                   <Badge variant="outline" className="capitalize">{u.role}</Badge>
-                  {!u.active && <Badge variant="destructive">Inactive</Badge>}
+                  {u.status !== "active" && <Badge variant="destructive">Inactive</Badge>}
                 </div>
-                <div className="text-xs text-muted-foreground">@{u.username} · {u.region ?? "—"} · joined {u.joinedAt}</div>
+                <div className="text-xs text-muted-foreground">@{u.username} · {u.region ?? "—"} · joined {u.created_at.slice(0, 10)}</div>
               </div>
-              <Button size="sm" variant="outline" onClick={() => toggle(u.id)}>{u.active ? "Deactivate" : "Activate"}</Button>
+              <Button size="sm" variant="outline" onClick={() => toggle(u)}>{u.status === "active" ? "Deactivate" : "Activate"}</Button>
             </CardContent>
           </Card>
         ))}
+        {list.length === 0 && <p className="text-sm text-muted-foreground text-center py-10">No users</p>}
       </div>
     </div>
   );
