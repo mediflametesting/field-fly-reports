@@ -79,7 +79,7 @@ function LoginPage() {
             </div>
           </CardContent>
         </Card>
-        <p className="mt-4 text-center text-xs text-muted-foreground">Mock data mode • Supabase integration ready</p>
+        <p className="mt-4 text-center text-xs text-muted-foreground">Connected to Supabase</p>
       </div>
     </div>
   );
