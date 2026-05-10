@@ -14,6 +14,7 @@ import {
   ClipboardList,
   FileBarChart2,
   Bell,
+  Plus,
 } from "lucide-react";
 import {
   Sidebar,
@@ -40,18 +41,19 @@ interface NavItem {
 
 const items: NavItem[] = [
   { title: "Dashboard", url: "/app/dashboard", icon: LayoutDashboard, roles: ["admin", "manager", "hr", "executive"] },
-  { title: "Visit Report", url: "/app/visit-report", icon: ClipboardList, roles: ["executive", "manager", "admin"] },
-  { title: "Daily Report", url: "/app/reports", icon: FileText, roles: ["executive", "manager", "admin"] },
-  { title: "Visits", url: "/app/visits", icon: MapPin, roles: ["executive", "manager", "admin"] },
-  { title: "Orders", url: "/app/orders", icon: ShoppingCart, roles: ["executive", "manager", "admin"] },
-  { title: "Customers", url: "/app/customers", icon: Users2, roles: ["admin", "manager", "executive"] },
-  { title: "Companies", url: "/app/companies", icon: Building2, roles: ["admin", "manager", "executive"] },
-  { title: "Reports", url: "/app/advanced-reports", icon: FileBarChart2, roles: ["admin", "manager", "hr", "executive"] },
+  { title: "Add Visit", url: "/app/visit-report", icon: Plus, roles: ["executive"] },
+  { title: "Visit Reports", url: "/app/visit-report", icon: ClipboardList, roles: ["admin", "manager"] },
+  { title: "My Visits", url: "/app/visits", icon: MapPin, roles: ["executive"] },
+  { title: "Orders", url: "/app/orders", icon: ShoppingCart, roles: ["admin", "manager", "executive"] },
+  { title: "Customers", url: "/app/customers", icon: Users2, roles: ["admin", "manager"] },
+  { title: "Companies", url: "/app/companies", icon: Building2, roles: ["admin"] },
+  { title: "Team", url: "/app/team", icon: Users, roles: ["admin", "manager", "hr"] },
+  { title: "Attendance", url: "/app/attendance", icon: CalendarCheck, roles: ["admin", "manager", "hr", "executive"] },
+  { title: "Daily Reports", url: "/app/reports", icon: FileText, roles: ["admin", "manager", "hr", "executive"] },
+  { title: "Reports", url: "/app/advanced-reports", icon: FileBarChart2, roles: ["admin", "hr", "manager"] },
+  { title: "Analytics", url: "/app/analytics", icon: BarChart3, roles: ["admin", "manager"] },
   { title: "Notifications", url: "/app/notifications", icon: Bell, roles: ["admin", "manager", "hr", "executive"] },
-  { title: "Attendance", url: "/app/attendance", icon: CalendarCheck, roles: ["executive", "hr", "admin", "manager"] },
-  { title: "Team", url: "/app/team", icon: Users, roles: ["manager", "admin"] },
-  { title: "Analytics", url: "/app/analytics", icon: BarChart3, roles: ["manager", "admin"] },
-  { title: "Users", url: "/app/users", icon: UserCog, roles: ["admin", "hr"] },
+  { title: "Users", url: "/app/users", icon: UserCog, roles: ["admin"] },
 ];
 
 export function AppSidebar() {
@@ -74,8 +76,8 @@ export function AppSidebar() {
           <SidebarGroupContent>
             <SidebarMenu>
               {visible.map((item) => (
-                <SidebarMenuItem key={item.url}>
-                  <SidebarMenuButton asChild isActive={path === item.url}>
+                <SidebarMenuItem key={item.title + item.url}>
+                  <SidebarMenuButton asChild isActive={path === item.url} tooltip={item.title}>
                     <Link to={item.url}>
                       <item.icon className="h-4 w-4" />
                       <span>{item.title}</span>
