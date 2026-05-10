@@ -1,22 +1,39 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useAuth } from "@/lib/auth";
-import { db } from "@/lib/mock-data";
+import { notificationService, type Notification } from "@/services/notificationService";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Bell, BellOff, CheckCheck } from "lucide-react";
+import { toast } from "sonner";
 
 export const Route = createFileRoute("/app/notifications")({ component: NotificationsPage });
 
 function NotificationsPage() {
   const { user } = useAuth();
-  const [, force] = useState(0);
-  if (!user) return null;
-  const list = db.notifications.filter((n) => n.userId === user.id).sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+  const [list, setList] = useState<Notification[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  const markAll = () => { list.forEach((n) => (n.read = true)); force((n) => n + 1); };
-  const toggle = (id: string) => { const n = db.notifications.find((x) => x.id === id); if (n) n.read = !n.read; force((n) => n + 1); };
+  const reload = async () => {
+    if (!user) return;
+    setLoading(true);
+    try { setList(await notificationService.list(user.id)); }
+    catch (e) { toast.error(e instanceof Error ? e.message : "Failed to load"); }
+    finally { setLoading(false); }
+  };
+  useEffect(() => { reload(); /* eslint-disable-next-line */ }, [user?.id]);
+
+  if (!user) return null;
+
+  const markAll = async () => {
+    try { await notificationService.markAllRead(user.id); await reload(); }
+    catch (e) { toast.error(e instanceof Error ? e.message : "Failed"); }
+  };
+  const toggle = async (n: Notification) => {
+    try { await notificationService.setRead(n.id, !n.read); await reload(); }
+    catch (e) { toast.error(e instanceof Error ? e.message : "Failed"); }
+  };
 
   return (
     <div className="space-y-4">
@@ -38,15 +55,16 @@ function NotificationsPage() {
                   <div className="font-medium">{n.title}</div>
                   <Badge variant={n.type === "alert" ? "destructive" : n.type === "reminder" ? "default" : "secondary"}>{n.type}</Badge>
                 </div>
-                <p className="text-sm text-muted-foreground mt-1">{n.body}</p>
-                <Button size="sm" variant="ghost" className="mt-2 h-7 px-2 text-xs" onClick={() => toggle(n.id)}>
+                {n.body && <p className="text-sm text-muted-foreground mt-1">{n.body}</p>}
+                <Button size="sm" variant="ghost" className="mt-2 h-7 px-2 text-xs" onClick={() => toggle(n)}>
                   Mark as {n.read ? "unread" : "read"}
                 </Button>
               </div>
             </CardContent>
           </Card>
         ))}
-        {list.length === 0 && <p className="text-sm text-muted-foreground text-center py-10">No notifications</p>}
+        {!loading && list.length === 0 && <p className="text-sm text-muted-foreground text-center py-10">No notifications</p>}
+        {loading && <p className="text-sm text-muted-foreground text-center py-10">Loading…</p>}
       </div>
     </div>
   );

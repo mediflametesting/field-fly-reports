@@ -1,7 +1,10 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useAuth } from "@/lib/auth";
-import { db, userById, customerById, companyById, type CollectionMode } from "@/lib/mock-data";
+import { reportService, type VisitReport } from "@/services/reportService";
+import { customerService, type Customer } from "@/services/customerService";
+import { companyService, type Company } from "@/services/companyService";
+import { userService, type AppUser } from "@/services/userService";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -28,8 +31,14 @@ function downloadCSV(filename: string, rows: (string | number)[][]) {
 }
 
 function AdvancedReports() {
-  const { user, hasRole } = useAuth();
+  const { user } = useAuth();
   const isExec = user?.role === "executive";
+
+  const [reports, setReports] = useState<VisitReport[]>([]);
+  const [customers, setCustomers] = useState<Customer[]>([]);
+  const [companies, setCompanies] = useState<Company[]>([]);
+  const [users, setUsers] = useState<AppUser[]>([]);
+
   const [from, setFrom] = useState(days30Ago);
   const [to, setTo] = useState(today);
   const [execId, setExecId] = useState<string>("all");
@@ -38,35 +47,58 @@ function AdvancedReports() {
   const [place, setPlace] = useState("");
   const [mode, setMode] = useState<string>("all");
 
-  if (!user) return null;
+  useEffect(() => {
+    if (!user) return;
+    (async () => {
+      try {
+        const [r, c, co, u] = await Promise.all([
+          isExec ? reportService.listForUser(user.id) : reportService.listAll(),
+          customerService.list(),
+          companyService.list(),
+          userService.list().catch(() => [] as AppUser[]),
+        ]);
+        setReports(r); setCustomers(c); setCompanies(co); setUsers(u);
+      } catch (e) {
+        toast.error(e instanceof Error ? e.message : "Failed to load reports");
+      }
+    })();
+  }, [user?.id, isExec]);
+
+  const customerMap = new Map(customers.map((c) => [c.id, c]));
+  const companyMap = new Map(companies.map((c) => [c.id, c]));
+  const userMap = new Map(users.map((u) => [u.id, u]));
 
   const filtered = useMemo(() => {
-    return db.visitReports.filter((r) => {
-      if (isExec && r.executiveId !== user.id) return false;
-      if (r.date < from || r.date > to) return false;
-      if (!isExec && execId !== "all" && r.executiveId !== execId) return false;
-      if (companyId !== "all" && r.companyId !== companyId) return false;
-      if (customerId !== "all" && r.customerId !== customerId) return false;
-      if (place && !r.place.toLowerCase().includes(place.toLowerCase())) return false;
-      if (mode !== "all" && r.collectionMode !== (mode as CollectionMode)) return false;
+    return reports.filter((r) => {
+      if (r.visit_date < from || r.visit_date > to) return false;
+      if (!isExec && execId !== "all" && r.user_id !== execId) return false;
+      if (companyId !== "all" && r.company_id !== companyId) return false;
+      if (customerId !== "all" && r.customer_id !== customerId) return false;
+      if (place) {
+        const p = r.customer_id ? customerMap.get(r.customer_id)?.place ?? "" : "";
+        if (!p.toLowerCase().includes(place.toLowerCase())) return false;
+      }
+      if (mode !== "all" && r.collection_mode !== mode) return false;
       return true;
     });
-  }, [from, to, execId, companyId, customerId, place, mode, isExec, user.id, db.visitReports.length]);
+  }, [reports, from, to, execId, companyId, customerId, place, mode, isExec, customerMap]);
+
+  if (!user) return null;
 
   const exportCSV = () => {
     const header = ["Date", "Executive", "Company", "Customer", "Place", "Visit Type", "Order ₹", "Collection ₹", "Mode", "Notes", "Feedback"];
     const rows = filtered.map((r) => [
-      r.date,
-      userById(r.executiveId)?.fullName ?? "",
-      companyById(r.companyId)?.name ?? "",
-      customerById(r.customerId)?.name ?? "",
-      r.place,
-      r.visitType,
-      r.orderValue,
-      r.collectionAmount,
-      r.collectionMode ?? "",
-      r.collectionNotes,
-      r.feedback,
+      r.visit_date,
+      userMap.get(r.user_id)?.full_name ?? "",
+      r.company_id ? companyMap.get(r.company_id)?.company_name ?? "" : "",
+      r.customer_id ? customerMap.get(r.customer_id)?.customer_name ?? "" : "",
+      r.customer_id ? customerMap.get(r.customer_id)?.place ?? "" : "",
+      r.visit_mode ?? "",
+      Number(r.approx_order_value),
+      Number(r.collection_amount),
+      r.collection_mode ?? "",
+      r.collection_details ?? "",
+      r.party_feedback ?? "",
     ]);
     downloadCSV(`visit-reports-${from}_${to}.csv`, [header, ...rows]);
     toast.success("CSV exported");
@@ -74,38 +106,37 @@ function AdvancedReports() {
 
   const printReport = () => window.print();
 
-  // Aggregations
   const orderSummary = useMemo(() => {
     const m = new Map<string, number>();
-    filtered.forEach((r) => m.set(r.date, (m.get(r.date) ?? 0) + r.orderValue));
+    filtered.forEach((r) => m.set(r.visit_date, (m.get(r.visit_date) ?? 0) + Number(r.approx_order_value)));
     return Array.from(m.entries()).sort();
   }, [filtered]);
 
   const collectionSummary = useMemo(() => {
     const m = new Map<string, number>();
-    filtered.forEach((r) => { if (r.collectionMode) m.set(r.collectionMode, (m.get(r.collectionMode) ?? 0) + r.collectionAmount); });
+    filtered.forEach((r) => { if (r.collection_mode) m.set(r.collection_mode, (m.get(r.collection_mode) ?? 0) + Number(r.collection_amount)); });
     return Array.from(m.entries());
   }, [filtered]);
 
   const execPerformance = useMemo(() => {
     const m = new Map<string, { visits: number; orders: number; coll: number }>();
     filtered.forEach((r) => {
-      const cur = m.get(r.executiveId) ?? { visits: 0, orders: 0, coll: 0 };
-      cur.visits += 1; cur.orders += r.orderValue; cur.coll += r.collectionAmount;
-      m.set(r.executiveId, cur);
+      const cur = m.get(r.user_id) ?? { visits: 0, orders: 0, coll: 0 };
+      cur.visits += 1; cur.orders += Number(r.approx_order_value); cur.coll += Number(r.collection_amount);
+      m.set(r.user_id, cur);
     });
     return Array.from(m.entries());
   }, [filtered]);
 
   const companySales = useMemo(() => {
     const m = new Map<string, number>();
-    filtered.forEach((r) => m.set(r.companyId, (m.get(r.companyId) ?? 0) + r.orderValue));
+    filtered.forEach((r) => { if (r.company_id) m.set(r.company_id, (m.get(r.company_id) ?? 0) + Number(r.approx_order_value)); });
     return Array.from(m.entries()).sort((a, b) => b[1] - a[1]);
   }, [filtered]);
 
   const customerHistory = useMemo(() => {
     const m = new Map<string, number>();
-    filtered.forEach((r) => m.set(r.customerId, (m.get(r.customerId) ?? 0) + 1));
+    filtered.forEach((r) => { if (r.customer_id) m.set(r.customer_id, (m.get(r.customer_id) ?? 0) + 1); });
     return Array.from(m.entries()).sort((a, b) => b[1] - a[1]);
   }, [filtered]);
 
@@ -135,7 +166,7 @@ function AdvancedReports() {
                   <SelectTrigger><SelectValue /></SelectTrigger>
                   <SelectContent>
                     <SelectItem value="all">All</SelectItem>
-                    {db.users.filter((u) => u.role === "executive").map((u) => <SelectItem key={u.id} value={u.id}>{u.fullName}</SelectItem>)}
+                    {users.filter((u) => u.role === "executive").map((u) => <SelectItem key={u.id} value={u.id}>{u.full_name}</SelectItem>)}
                   </SelectContent>
                 </Select>
               </div>
@@ -146,7 +177,7 @@ function AdvancedReports() {
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">All</SelectItem>
-                  {db.companies.map((c) => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}
+                  {companies.map((c) => <SelectItem key={c.id} value={c.id}>{c.company_name}</SelectItem>)}
                 </SelectContent>
               </Select>
             </div>
@@ -156,7 +187,7 @@ function AdvancedReports() {
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">All</SelectItem>
-                  {db.customers.map((c) => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}
+                  {customers.map((c) => <SelectItem key={c.id} value={c.id}>{c.customer_name}</SelectItem>)}
                 </SelectContent>
               </Select>
             </div>
@@ -192,14 +223,14 @@ function AdvancedReports() {
               <TableBody>
                 {filtered.map((r) => (
                   <TableRow key={r.id}>
-                    <TableCell>{r.date}</TableCell>
-                    <TableCell>{userById(r.executiveId)?.fullName}</TableCell>
-                    <TableCell>{companyById(r.companyId)?.name}</TableCell>
-                    <TableCell>{customerById(r.customerId)?.name}</TableCell>
-                    <TableCell>{r.place}</TableCell>
-                    <TableCell>{r.visitType}</TableCell>
-                    <TableCell className="text-right">{r.orderValue.toLocaleString("en-IN")}</TableCell>
-                    <TableCell className="text-right">{r.collectionAmount.toLocaleString("en-IN")}</TableCell>
+                    <TableCell>{r.visit_date}</TableCell>
+                    <TableCell>{userMap.get(r.user_id)?.full_name}</TableCell>
+                    <TableCell>{r.company_id ? companyMap.get(r.company_id)?.company_name : ""}</TableCell>
+                    <TableCell>{r.customer_id ? customerMap.get(r.customer_id)?.customer_name : ""}</TableCell>
+                    <TableCell>{r.customer_id ? customerMap.get(r.customer_id)?.place : ""}</TableCell>
+                    <TableCell>{r.visit_mode}</TableCell>
+                    <TableCell className="text-right">{Number(r.approx_order_value).toLocaleString("en-IN")}</TableCell>
+                    <TableCell className="text-right">{Number(r.collection_amount).toLocaleString("en-IN")}</TableCell>
                   </TableRow>
                 ))}
                 {filtered.length === 0 && <TableRow><TableCell colSpan={8} className="text-center py-6 text-muted-foreground">No data</TableCell></TableRow>}
@@ -230,7 +261,7 @@ function AdvancedReports() {
           <Card><CardContent className="p-0 overflow-x-auto">
             <Table>
               <TableHeader><TableRow><TableHead>Executive</TableHead><TableHead className="text-right">Visits</TableHead><TableHead className="text-right">Orders ₹</TableHead><TableHead className="text-right">Collections ₹</TableHead></TableRow></TableHeader>
-              <TableBody>{execPerformance.map(([id, s]) => <TableRow key={id}><TableCell>{userById(id)?.fullName}</TableCell><TableCell className="text-right">{s.visits}</TableCell><TableCell className="text-right">{s.orders.toLocaleString("en-IN")}</TableCell><TableCell className="text-right">{s.coll.toLocaleString("en-IN")}</TableCell></TableRow>)}</TableBody>
+              <TableBody>{execPerformance.map(([id, s]) => <TableRow key={id}><TableCell>{userMap.get(id)?.full_name}</TableCell><TableCell className="text-right">{s.visits}</TableCell><TableCell className="text-right">{s.orders.toLocaleString("en-IN")}</TableCell><TableCell className="text-right">{s.coll.toLocaleString("en-IN")}</TableCell></TableRow>)}</TableBody>
             </Table>
           </CardContent></Card>
         </TabsContent>
@@ -239,7 +270,7 @@ function AdvancedReports() {
           <Card><CardContent className="p-0 overflow-x-auto">
             <Table>
               <TableHeader><TableRow><TableHead>Company</TableHead><TableHead className="text-right">Orders ₹</TableHead></TableRow></TableHeader>
-              <TableBody>{companySales.map(([id, v]) => <TableRow key={id}><TableCell>{companyById(id)?.name}</TableCell><TableCell className="text-right">{v.toLocaleString("en-IN")}</TableCell></TableRow>)}</TableBody>
+              <TableBody>{companySales.map(([id, v]) => <TableRow key={id}><TableCell>{companyMap.get(id)?.company_name}</TableCell><TableCell className="text-right">{v.toLocaleString("en-IN")}</TableCell></TableRow>)}</TableBody>
             </Table>
           </CardContent></Card>
         </TabsContent>
@@ -248,13 +279,11 @@ function AdvancedReports() {
           <Card><CardContent className="p-0 overflow-x-auto">
             <Table>
               <TableHeader><TableRow><TableHead>Customer</TableHead><TableHead className="text-right">Visits</TableHead></TableRow></TableHeader>
-              <TableBody>{customerHistory.map(([id, n]) => <TableRow key={id}><TableCell>{customerById(id)?.name}</TableCell><TableCell className="text-right">{n}</TableCell></TableRow>)}</TableBody>
+              <TableBody>{customerHistory.map(([id, n]) => <TableRow key={id}><TableCell>{customerMap.get(id)?.customer_name}</TableCell><TableCell className="text-right">{n}</TableCell></TableRow>)}</TableBody>
             </Table>
           </CardContent></Card>
         </TabsContent>
       </Tabs>
-
-      {!hasRole("admin", "manager", "hr", "executive") && null}
     </div>
   );
 }
