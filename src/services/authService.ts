@@ -11,6 +11,12 @@ export interface SessionUser {
   status: string;
 }
 
+export function normalizeRole(value: unknown): Role {
+  const role = String(value ?? "").trim().toLowerCase();
+  if (["admin", "manager", "hr", "executive"].includes(role)) return role as Role;
+  return "executive";
+}
+
 export const authService = {
   async login(username: string, password: string): Promise<SessionUser> {
     const { data, error } = await supabase.rpc("verify_login", {
@@ -24,9 +30,9 @@ export const authService = {
       id: row.id,
       username: row.username,
       fullName: row.full_name,
-      role: row.role as Role,
+      role: normalizeRole(row.role ?? row.role_name),
       region: row.region,
-      status: row.status,
+      status: row.status ?? "active",
     };
   },
 

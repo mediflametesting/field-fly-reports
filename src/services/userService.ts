@@ -1,5 +1,5 @@
 import { supabase } from "@/supabase/supabaseClient";
-import type { Role } from "@/services/authService";
+import { normalizeRole, type Role } from "@/services/authService";
 
 export interface AppUser {
   id: string;
@@ -8,26 +8,31 @@ export interface AppUser {
   role: Role;
   region: string | null;
   status: "active" | "inactive";
-  manager_id: string | null;
+  manager_id?: string | null;
   created_at: string;
 }
 
 export const userService = {
   async list(): Promise<AppUser[]> {
-    const { data, error } = await supabase
+    const [{ data, error }, { data: roles, error: rolesError }] = await Promise.all([
+      supabase
       .from("users")
-      .select("id, username, full_name, region, status, manager_id, created_at, roles!inner(role_name)")
-      .order("created_at", { ascending: false });
+      .select("id, username, full_name, region, status, role_id, created_at")
+      .order("created_at", { ascending: false }),
+      supabase.from("roles").select("id, role_name"),
+    ]);
     if (error) throw error;
+    if (rolesError) throw rolesError;
+    const roleById = new Map((roles ?? []).map((role: any) => [role.id, role.role_name]));
     return (data ?? []).map((r: any) => ({
       id: r.id,
       username: r.username,
       full_name: r.full_name,
       region: r.region,
       status: r.status,
-      manager_id: r.manager_id,
+      manager_id: null,
       created_at: r.created_at,
-      role: r.roles.role_name as Role,
+      role: normalizeRole(roleById.get(r.role_id)),
     }));
   },
   async listExecutives(): Promise<AppUser[]> {
