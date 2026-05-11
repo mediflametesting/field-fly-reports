@@ -14,11 +14,16 @@ export interface AppUser {
 
 export const userService = {
   async list(): Promise<AppUser[]> {
-    const { data, error } = await supabase
+    const [{ data, error }, { data: roles, error: rolesError }] = await Promise.all([
+      supabase
       .from("users")
-      .select("id, username, full_name, region, status, manager_id, created_at, roles!inner(role_name)")
-      .order("created_at", { ascending: false });
+      .select("id, username, full_name, region, status, manager_id, role_id, created_at")
+      .order("created_at", { ascending: false }),
+      supabase.from("roles").select("id, role_name"),
+    ]);
     if (error) throw error;
+    if (rolesError) throw rolesError;
+    const roleById = new Map((roles ?? []).map((role: any) => [role.id, role.role_name]));
     return (data ?? []).map((r: any) => ({
       id: r.id,
       username: r.username,
@@ -27,7 +32,7 @@ export const userService = {
       status: r.status,
       manager_id: r.manager_id,
       created_at: r.created_at,
-      role: normalizeRole(r.roles?.role_name),
+      role: normalizeRole(roleById.get(r.role_id)),
     }));
   },
   async listExecutives(): Promise<AppUser[]> {
