@@ -122,7 +122,7 @@ export function Sidebar() {
 
   return (
     <>
-      <aside className="fixed left-0 top-0 z-50 hidden h-screen w-72 border-r border-sidebar-border bg-sidebar md:flex md:flex-col">
+      <aside className="fixed left-0 top-0 z-50 hidden h-screen w-[280px] border-r border-sidebar-border bg-sidebar md:flex md:flex-col">
         <SidebarShell items={items} />
       </aside>
 
@@ -143,7 +143,7 @@ export function Sidebar() {
             className="absolute inset-0 bg-foreground/45"
             onClick={() => setMobileOpen(false)}
           />
-          <aside className="absolute left-0 top-0 h-screen w-72 max-w-[86vw] border-r border-sidebar-border bg-sidebar shadow-xl">
+          <aside className="absolute left-0 top-0 h-screen w-[280px] max-w-[86vw] border-r border-sidebar-border bg-sidebar shadow-xl">
             <div className="absolute right-3 top-3 z-10">
               <button
                 type="button"
