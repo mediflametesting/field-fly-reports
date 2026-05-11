@@ -11,7 +11,7 @@ export interface SessionUser {
   status: string;
 }
 
-function normalizeRole(value: unknown): Role {
+export function normalizeRole(value: unknown): Role {
   const role = String(value ?? "").trim().toLowerCase();
   if (["admin", "manager", "hr", "executive"].includes(role)) return role as Role;
   return "executive";
