@@ -3,6 +3,7 @@ import { authService, type Role, type SessionUser } from "@/services/authService
 
 interface AuthState {
   user: SessionUser | null;
+  loading: boolean;
   isAuthenticated: boolean;
   login: (username: string, password: string) => Promise<void>;
   logout: () => void;
@@ -12,6 +13,22 @@ interface AuthState {
 const AuthContext = createContext<AuthState | null>(null);
 const STORAGE_KEY = "sfa_session_v2";
 
+function normalizeSession(raw: unknown): SessionUser | null {
+  if (!raw || typeof raw !== "object") return null;
+  const value = raw as Partial<SessionUser>;
+  if (!value.id || !value.username || !value.fullName) return null;
+  const role = String(value.role ?? "").toLowerCase() as Role;
+  if (!["admin", "manager", "hr", "executive"].includes(role)) return null;
+  return {
+    id: value.id,
+    username: value.username,
+    fullName: value.fullName,
+    role,
+    region: value.region ?? null,
+    status: value.status ?? "active",
+  };
+}
+
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<SessionUser | null>(null);
   const [ready, setReady] = useState(false);
@@ -19,9 +36,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     try {
       const raw = localStorage.getItem(STORAGE_KEY);
-      if (raw) setUser(JSON.parse(raw));
+      if (raw) setUser(normalizeSession(JSON.parse(raw)));
     } catch {
-      // ignore
+      localStorage.removeItem(STORAGE_KEY);
     }
     setReady(true);
   }, []);
@@ -39,10 +56,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const hasRole = (...roles: Role[]) => !!user && roles.includes(user.role);
 
-  if (!ready) return null;
-
   return (
-    <AuthContext.Provider value={{ user, isAuthenticated: !!user, login, logout, hasRole }}>
+    <AuthContext.Provider value={{ user, loading: !ready, isAuthenticated: !!user, login, logout, hasRole }}>
       {children}
     </AuthContext.Provider>
   );
