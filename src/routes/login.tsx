@@ -13,19 +13,19 @@ export const Route = createFileRoute("/login")({
 });
 
 function LoginPage() {
-  const { login, isAuthenticated } = useAuth();
+  const { login, isAuthenticated, loading } = useAuth();
   const navigate = useNavigate();
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    if (isAuthenticated) navigate({ to: "/app/dashboard" });
-  }, [isAuthenticated, navigate]);
+    if (!loading && isAuthenticated) navigate({ to: "/app/dashboard" });
+  }, [isAuthenticated, loading, navigate]);
 
   const onSubmit = async (e: FormEvent) => {
     e.preventDefault();
-    setLoading(true);
+    setSubmitting(true);
     try {
       await login(username.trim(), password);
       toast.success("Welcome back");
@@ -33,7 +33,7 @@ function LoginPage() {
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Login failed");
     } finally {
-      setLoading(false);
+      setSubmitting(false);
     }
   };
 
@@ -64,8 +64,8 @@ function LoginPage() {
                 <Label htmlFor="password">Password</Label>
                 <Input id="password" type="password" autoComplete="current-password" value={password} onChange={(e) => setPassword(e.target.value)} required />
               </div>
-              <Button type="submit" className="w-full" disabled={loading}>
-                {loading ? "Signing in..." : "Sign in"}
+              <Button type="submit" className="w-full" disabled={submitting}>
+                {submitting ? "Signing in..." : "Sign in"}
               </Button>
             </form>
             <div className="mt-6 border-t pt-4">
