@@ -8,7 +8,7 @@ export interface AppUser {
   role: Role;
   region: string | null;
   status: "active" | "inactive";
-  manager_id: string | null;
+  manager_id?: string | null;
   created_at: string;
 }
 
@@ -17,7 +17,7 @@ export const userService = {
     const [{ data, error }, { data: roles, error: rolesError }] = await Promise.all([
       supabase
       .from("users")
-      .select("id, username, full_name, region, status, manager_id, role_id, created_at")
+      .select("id, username, full_name, region, status, role_id, created_at")
       .order("created_at", { ascending: false }),
       supabase.from("roles").select("id, role_name"),
     ]);
@@ -30,7 +30,7 @@ export const userService = {
       full_name: r.full_name,
       region: r.region,
       status: r.status,
-      manager_id: r.manager_id,
+      manager_id: null,
       created_at: r.created_at,
       role: normalizeRole(roleById.get(r.role_id)),
     }));
