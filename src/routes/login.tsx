@@ -13,15 +13,15 @@ export const Route = createFileRoute("/login")({
 });
 
 function LoginPage() {
-  const { login, isAuthenticated, loading } = useAuth();
+  const { login, isAuthenticated, loading: authLoading } = useAuth();
   const navigate = useNavigate();
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
-  const [loading, setLoading] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
-    if (!loading && isAuthenticated) navigate({ to: "/app/dashboard" });
-  }, [isAuthenticated, loading, navigate]);
+    if (!authLoading && isAuthenticated) navigate({ to: "/app/dashboard" });
+  }, [authLoading, isAuthenticated, navigate]);
 
   const onSubmit = async (e: FormEvent) => {
     e.preventDefault();
