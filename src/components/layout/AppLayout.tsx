@@ -1,4 +1,4 @@
-import { Navigate, Outlet, useLocation } from "@tanstack/react-router";
+import { Navigate, Outlet } from "@tanstack/react-router";
 import { Sidebar } from "@/components/layout/Sidebar";
 import { useAuth } from "@/lib/auth";
 
@@ -15,10 +15,9 @@ function Loader() {
 
 export function AppLayout() {
   const { user, loading } = useAuth();
-  const location = useLocation();
 
   if (loading) return <Loader />;
-  if (!user) return <Navigate to="/login" search={{ redirect: location.href }} />;
+  if (!user) return <Navigate to="/login" />;
 
   return (
     <div className="min-h-screen bg-muted/30">
