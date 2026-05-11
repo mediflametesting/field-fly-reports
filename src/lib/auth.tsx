@@ -1,5 +1,5 @@
 import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
-import { authService, type Role, type SessionUser } from "@/services/authService";
+import { authService, normalizeRole, type Role, type SessionUser } from "@/services/authService";
 
 interface AuthState {
   user: SessionUser | null;
@@ -17,13 +17,11 @@ function normalizeSession(raw: unknown): SessionUser | null {
   if (!raw || typeof raw !== "object") return null;
   const value = raw as Partial<SessionUser>;
   if (!value.id || !value.username || !value.fullName) return null;
-  const role = String(value.role ?? "").toLowerCase() as Role;
-  if (!["admin", "manager", "hr", "executive"].includes(role)) return null;
   return {
     id: value.id,
     username: value.username,
     fullName: value.fullName,
-    role,
+    role: normalizeRole(value.role),
     region: value.region ?? null,
     status: value.status ?? "active",
   };
