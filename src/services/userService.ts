@@ -1,5 +1,5 @@
 import { supabase } from "@/supabase/supabaseClient";
-import type { Role } from "@/services/authService";
+import { normalizeRole, type Role } from "@/services/authService";
 
 export interface AppUser {
   id: string;
@@ -27,7 +27,7 @@ export const userService = {
       status: r.status,
       manager_id: r.manager_id,
       created_at: r.created_at,
-      role: r.roles.role_name as Role,
+      role: normalizeRole(r.roles?.role_name),
     }));
   },
   async listExecutives(): Promise<AppUser[]> {
