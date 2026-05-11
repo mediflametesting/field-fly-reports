@@ -129,7 +129,7 @@ export function Sidebar() {
       <button
         type="button"
         aria-label="Open menu"
-        className="inline-flex h-10 w-10 items-center justify-center rounded-md border bg-background text-foreground shadow-sm md:hidden"
+        className="fixed left-4 top-2 z-50 inline-flex h-10 w-10 items-center justify-center rounded-md border bg-background text-foreground shadow-sm md:hidden"
         onClick={() => setMobileOpen(true)}
       >
         <Menu className="h-5 w-5" />
