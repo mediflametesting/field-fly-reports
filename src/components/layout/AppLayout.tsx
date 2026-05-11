@@ -22,7 +22,7 @@ export function AppLayout() {
   return (
     <div className="min-h-screen bg-muted/30">
       <Sidebar />
-      <div className="min-h-screen md:ml-72">
+      <div className="min-h-screen md:ml-[280px]">
         <header className="sticky top-0 z-40 flex h-14 items-center gap-3 border-b bg-background px-4 md:px-6">
           <div className="ml-12 min-w-0 flex-1 md:ml-0">
             <div className="truncate text-sm font-semibold">FieldForce</div>
