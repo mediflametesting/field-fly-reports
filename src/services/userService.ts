@@ -8,14 +8,16 @@ export interface AppUser {
   role: Role;
   region: string | null;
   status: "active" | "inactive";
-  manager_id?: string | null;
   created_at: string;
 }
 
-function normalizeStatus(v: unknown): "active" | "inactive" {
+function statusFromDb(v: unknown): "active" | "inactive" {
   if (typeof v === "boolean") return v ? "active" : "inactive";
   const s = String(v ?? "").toLowerCase();
-  return s === "inactive" || s === "false" ? "inactive" : "active";
+  return s === "false" || s === "inactive" ? "inactive" : "active";
+}
+function statusToDb(s: "active" | "inactive"): boolean {
+  return s === "active";
 }
 
 export const userService = {
@@ -23,7 +25,7 @@ export const userService = {
     const [{ data, error }, { data: roles, error: rolesError }] = await Promise.all([
       supabase
         .from("users")
-        .select("id, username, full_name, region, status, role_id, manager_id, created_at")
+        .select("id, username, full_name, region, status, role_id, created_at")
         .order("created_at", { ascending: false }),
       supabase.from("roles").select("id, role_name"),
     ]);
@@ -35,8 +37,7 @@ export const userService = {
       username: r.username,
       full_name: r.full_name,
       region: r.region,
-      status: normalizeStatus(r.status),
-      manager_id: r.manager_id ?? null,
+      status: statusFromDb(r.status),
       created_at: r.created_at,
       role: normalizeRole(roleById.get(String(r.role_id))),
     }));
@@ -46,11 +47,7 @@ export const userService = {
     return all.filter((u) => u.role === "executive");
   },
   async setStatus(id: string, status: "active" | "inactive") {
-    // Try RPC first; fall back to direct update (after schema_fix.sql, RLS allows it).
-    const rpc = await supabase.rpc("set_user_status", { p_user_id: id, p_status: status });
-    if (!rpc.error) return;
-    console.warn("[set_user_status RPC failed, falling back]", rpc.error);
-    const { error } = await supabase.from("users").update({ status }).eq("id", id);
+    const { error } = await supabase.from("users").update({ status: statusToDb(status) }).eq("id", id);
     if (error) { console.error("[userService.setStatus]", error); throw new Error(error.message); }
   },
   async updateProfile(id: string, patch: { full_name?: string; region?: string | null }) {
