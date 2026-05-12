@@ -32,7 +32,7 @@ export const authService = {
       fullName: row.full_name,
       role: normalizeRole(row.role ?? row.role_name),
       region: row.region,
-      status: row.status ?? "active",
+      status: typeof row.status === "boolean" ? (row.status ? "active" : "inactive") : (row.status ?? "active"),
     };
   },
 
